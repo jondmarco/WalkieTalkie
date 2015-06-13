@@ -6,4 +6,6 @@ package jdm.walkietalkie;
 public class test {
     public String g;
     public String x;
+    public String t;
+    public String b;
 }
