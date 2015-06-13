@@ -2,6 +2,10 @@ package jdm.walkietalkie;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -28,6 +32,11 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
         if (mBluetoothAdapter == null) {
             // Device does not support Bluetooth
         }
+
+        Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+        discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+        startActivity(discoverableIntent);
+
         setContentView(R.layout.activity_main);
         setupViews();
         showPairedDevices();
@@ -37,7 +46,9 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
         lvPaired = (ListView) findViewById(R.id.lvPaired);
         lvDiscovered = (ListView) findViewById(R.id.lvDiscovered);
         bScan = (Button) findViewById(R.id.bScan);
+        bScan.setOnClickListener(this);
         bDiscover = (Button) findViewById(R.id.bDiscover);
+        bDiscover.setOnClickListener(this);
     }
 
     protected void showPairedDevices() {
@@ -45,7 +56,8 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
         lvPaired.setAdapter(pAdapter);
     }
     protected void showDiscoveredDevices() {
-        dAdapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,discoverDevices());
+        dAdapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1);
+        discoverDevices();
         lvDiscovered.setAdapter(dAdapter);
     }
 
@@ -67,10 +79,25 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
         return returnString;
     }
 
-    protected String[] discoverDevices() {
+    protected void discoverDevices() {
+        // Create a BroadcastReceiver for ACTION_FOUND
+        final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+            public void onReceive(Context context, Intent intent) {
+                String action = intent.getAction();
+                // When discovery finds a device
+                if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                    // Get the BluetoothDevice object from the Intent
+                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    // Add the name and address to an array adapter to show in a ListView
+                    dAdapter.add(device.getName() + "\n" + device.getAddress());
+                }
+            }
+        };
+// Register the BroadcastReceiver
+        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        registerReceiver(mReceiver, filter); // Don't forget to unregister during onDestroy
 
-
-        return new String[] {"3"};
+        return;
     }
 
 
@@ -102,6 +129,7 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
         switch (v.getId()) {
             case R.id.bScan:
                 showDiscoveredDevices();
+                mBluetoothAdapter.startDiscovery();
                 break;
             case R.id.bDiscover:
 
@@ -111,4 +139,7 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
                 break;
         }
     }
+
+
+
 }
