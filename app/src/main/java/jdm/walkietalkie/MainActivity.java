@@ -17,6 +17,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.util.Set;
@@ -33,9 +34,12 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
     ConnectPhoneThread connectPhoneThread;
     AcceptThread acceptThread;
 
+    protected Context activityContext;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        activityContext = this;
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (mBluetoothAdapter == null) {
             // Device does not support Bluetooth
@@ -55,6 +59,7 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
     protected void setupViews() {
         lvPaired = (ListView) findViewById(R.id.lvPaired);
         lvDiscovered = (ListView) findViewById(R.id.lvDiscovered);
+        lvDiscovered.setOnItemClickListener(this);
         bScan = (Button) findViewById(R.id.bScan);
         bScan.setOnClickListener(this);
         bDiscover = (Button) findViewById(R.id.bDiscover);
@@ -155,7 +160,7 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
         String temp = (String) parent.getItemAtPosition(position);
-        connectPhoneThread = new ConnectPhoneThread(mBluetoothAdapter.getRemoteDevice(temp.substring(temp.length() - 16)));
+        connectPhoneThread = new ConnectPhoneThread(mBluetoothAdapter.getRemoteDevice(temp.substring(temp.length() - 17)));
         connectPhoneThread.start();
     }
 
@@ -236,6 +241,7 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
             while (true) {
                 try {
                     socket = mmServerSocket.accept();
+
                 } catch (IOException e) {
                     break;
                 }
@@ -244,6 +250,7 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
                     // Do work to manage the connection (in a separate thread)
                     //ConnectedThread connectedThread = new ConnectedThread(socket);
                     //connectedThread.start();
+                    //Toast.makeText(activityContext,"Connected",Toast.LENGTH_LONG).show();
                     try {
                         mmServerSocket.close();
                     } catch (IOException e) {
