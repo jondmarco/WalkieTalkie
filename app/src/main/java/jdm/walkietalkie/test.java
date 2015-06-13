@@ -5,7 +5,7 @@ package jdm.walkietalkie;
  */
 public class test {
     public String g1;
-    public String r;
+    public String rerre;
     public String x;
     public String t;
     public String b;
