@@ -7,4 +7,8 @@ public class test {
     public String g;
     public String r;
     public String x;
+    public String t;
+    public String b;
+    public String change;
+    public String s;
 }
