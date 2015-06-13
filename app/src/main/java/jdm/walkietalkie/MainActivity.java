@@ -1,5 +1,7 @@
 package jdm.walkietalkie;
 
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -9,16 +11,23 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 
+import java.util.Set;
+
 
 public class MainActivity extends ActionBarActivity implements ListView.OnClickListener {
 
     ListView lvPaired, lvDiscovered;
     Button bScan, bDiscover;
     ArrayAdapter<String> pAdapter, dAdapter;
+    BluetoothAdapter mBluetoothAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (mBluetoothAdapter == null) {
+            // Device does not support Bluetooth
+        }
         setContentView(R.layout.activity_main);
         setupViews();
         showPairedDevices();
@@ -41,10 +50,26 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
     }
 
     protected String[] getPairedDevices() {
-        return new String[] {"3"};
+
+        Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
+        String[] returnString = new String[10];
+        // If there are paired devices
+        if (pairedDevices.size() > 0) {
+            // Loop through paired devices
+            int index = 0;
+            for (BluetoothDevice device : pairedDevices) {
+                // Add the name and address to an array adapter to show in a ListView
+                returnString[index] = device.getName() + ": " + device.getAddress();
+                index++;
+            }
+        }
+
+        return returnString;
     }
 
     protected String[] discoverDevices() {
+
+
         return new String[] {"3"};
     }
 
