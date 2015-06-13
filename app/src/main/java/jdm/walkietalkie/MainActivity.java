@@ -4,14 +4,48 @@ import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ListView;
 
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends ActionBarActivity implements ListView.OnClickListener {
+
+    ListView lvPaired, lvDiscovered;
+    Button bScan, bDiscover;
+    ArrayAdapter<String> pAdapter, dAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        setupViews();
+        showPairedDevices();
+    }
+
+    protected void setupViews() {
+        lvPaired = (ListView) findViewById(R.id.lvPaired);
+        lvDiscovered = (ListView) findViewById(R.id.lvDiscovered);
+        bScan = (Button) findViewById(R.id.bScan);
+        bDiscover = (Button) findViewById(R.id.bDiscover);
+    }
+
+    protected void showPairedDevices() {
+        pAdapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,getPairedDevices());
+        lvPaired.setAdapter(pAdapter);
+    }
+    protected void showDiscoveredDevices() {
+        dAdapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,discoverDevices());
+        lvDiscovered.setAdapter(dAdapter);
+    }
+
+    protected String[] getPairedDevices() {
+        return new String[] {"3"};
+    }
+
+    protected String[] discoverDevices() {
+        return new String[] {"3"};
     }
 
 
@@ -35,5 +69,21 @@ public class MainActivity extends ActionBarActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onClick(View v) {
+
+        switch (v.getId()) {
+            case R.id.bScan:
+                showDiscoveredDevices();
+                break;
+            case R.id.bDiscover:
+
+                break;
+            default:
+
+                break;
+        }
     }
 }
