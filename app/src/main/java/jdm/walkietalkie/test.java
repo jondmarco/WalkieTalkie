@@ -5,4 +5,5 @@ package jdm.walkietalkie;
  */
 public class test {
     public String g;
+    public String x;
 }
