@@ -48,8 +48,8 @@
         <Button
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Discover"
-            android:id="@+id/bDiscover"
+            android:text="Talk"
+            android:id="@+id/bTalk"
             android:layout_weight="1"/>
     </LinearLayout>
 

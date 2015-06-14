@@ -9,7 +9,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 
-public class ConnectedActivity extends ActionBarActivity implements View.OnClickListener{
+public class ConnectedActivity extends ActionBarActivity implements View.OnClickListener, View.OnLongClickListener {
 
     TextView tvTitle;
     Button bTalk, bDisconnect;
@@ -24,7 +24,9 @@ public class ConnectedActivity extends ActionBarActivity implements View.OnClick
     private void setupViews() {
         tvTitle = (TextView) findViewById(R.id.tvTitle);
         bTalk = (Button) findViewById(R.id.bTalk);
+        bTalk.setOnLongClickListener(this);
         bDisconnect = (Button) findViewById(R.id.bDisconnect);
+        bDisconnect.setOnClickListener(this);
     }
 
     @Override
@@ -59,5 +61,15 @@ public class ConnectedActivity extends ActionBarActivity implements View.OnClick
 
                 break;
         }
+    }
+
+    @Override
+    public boolean onLongClick(View v) {
+        switch (v.getId()) {
+            case R.id.bTalk:
+
+                break;
+        }
+        return false;
     }
 }

@@ -2,19 +2,17 @@ package jdm.walkietalkie;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.Message;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -23,67 +21,84 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Set;
 import java.util.UUID;
+import jdm.walkietalkie.threads.ConnectPhoneThread;
+import jdm.walkietalkie.threads.ConnectedThread;
+import jdm.walkietalkie.threads.AcceptThread;
+import jdm.walkietalkie.threads.RecordingThread;
 
+public class MainActivity extends ActionBarActivity implements ListView.OnClickListener, ListView.OnItemClickListener, View.OnLongClickListener {
 
-public class MainActivity extends ActionBarActivity implements ListView.OnClickListener, ListView.OnItemClickListener {
+    private ListView lvPaired, lvDiscovered;
+    private Button bScan, bTalk;
+    private ArrayAdapter<String> pAdapter, dAdapter;
+    private BluetoothAdapter mBluetoothAdapter;
 
-    ListView lvPaired, lvDiscovered;
-    Button bScan, bDiscover;
-    ArrayAdapter<String> pAdapter, dAdapter;
-    BluetoothAdapter mBluetoothAdapter;
-    private final UUID APP_UUID = UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66");
-    ConnectPhoneThread connectPhoneThread;
-    AcceptThread acceptThread;
-    ConnectedThread connectedThread;
+    private ConnectPhoneThread connectPhoneThread;
+    private AcceptThread acceptThread;
+    private ConnectedThread connectedThread;
+
     private final int SUCCESS_CONNECT = 0;
-    private final int SEND_MIC_AUDIO = 1;
-    private AudioRecord recorder = null;
+    private final int RECEIVE_AUDIO = 1;
+    private final UUID APP_UUID = UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66");
 
-    private Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-            switch (msg.what) {
-                case SUCCESS_CONNECT:
-                    connectedThread = new ConnectedThread(
-                            (BluetoothSocket) msg.obj);
-                    connectedThread.start();
-                    break;
-                case SEND_MIC_AUDIO:
+    private  RecordingThread recordingThread;
 
+    int track;
 
-                    connectedThread.write((byte[]) msg.obj);
-                    break;
-            }
-        }
-    };
+    private static Handler mHandler = null;
 
     protected Context activityContext;
+    private ConnectedThread connectingThread = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
         activityContext = this;
+        enableBluetooth();
+        setupHandler();
+        setupViews();
+        showPairedDevices();
+    }
+
+    private void enableBluetooth() {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (mBluetoothAdapter == null) {
-            // Device does not support Bluetooth
+            Toast.makeText(this, "Does not support Bluetooth",Toast.LENGTH_LONG).show();
         }
+        acceptThread = new AcceptThread(mBluetoothAdapter, APP_UUID);
+        acceptThread.start();
+        track = 0;
 
         Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
         discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
         startActivity(discoverableIntent);
+    }
 
-        setContentView(R.layout.activity_main);
-        setupViews();
-        showPairedDevices();
-        acceptThread = new AcceptThread();
-        acceptThread.start();
+    private void setupHandler() {
+
+        mHandler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                super.handleMessage(msg);
+                switch (msg.what) {
+                    case SUCCESS_CONNECT:
+                        connectedThread = new ConnectedThread((BluetoothSocket) msg.obj);
+                        connectedThread.start();
+                        break;
+                    case RECEIVE_AUDIO:
+                        // and play on speaker
+                        byte[] readbuf = (byte[]) msg.obj;
+                        String s = new String(readbuf);
+                        if (s.length() > 0) {
+                            Toast.makeText(activityContext, s, Toast.LENGTH_LONG).show();
+                        }
+                        break;
+                }
+            }
+        };
     }
 
     protected void setupViews() {
@@ -92,9 +107,12 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
         lvDiscovered.setOnItemClickListener(this);
         bScan = (Button) findViewById(R.id.bScan);
         bScan.setOnClickListener(this);
-        bDiscover = (Button) findViewById(R.id.bDiscover);
-        bDiscover.setOnClickListener(this);
+        bTalk = (Button) findViewById(R.id.bTalk);
+        bTalk.setOnClickListener(this);
+        bTalk.setOnLongClickListener(this);
     }
+
+
 
     protected void showPairedDevices() {
         pAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, getPairedDevices());
@@ -107,8 +125,9 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
         lvDiscovered.setAdapter(dAdapter);
     }
 
-    protected String[] getPairedDevices() {
 
+
+    protected String[] getPairedDevices() {
         Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
         String[] returnString = new String[10];
         // If there are paired devices
@@ -121,7 +140,6 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
                 index++;
             }
         }
-
         return returnString;
     }
 
@@ -177,7 +195,7 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
                 showDiscoveredDevices();
                 mBluetoothAdapter.startDiscovery();
                 break;
-            case R.id.bDiscover:
+            case R.id.bTalk:
 
                 break;
             default:
@@ -188,213 +206,19 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
         String temp = (String) parent.getItemAtPosition(position);
-        connectPhoneThread = new ConnectPhoneThread(mBluetoothAdapter.getRemoteDevice(temp.substring(temp.length() - 17)));
+        connectPhoneThread = new ConnectPhoneThread(mBluetoothAdapter.getRemoteDevice(temp.substring(temp.length() - 17)), mBluetoothAdapter, APP_UUID);
         connectPhoneThread.start();
     }
 
-
-    private class ConnectPhoneThread extends Thread {
-        private final BluetoothSocket mmSocket;
-        private final BluetoothDevice mmDevice;
-
-        public ConnectPhoneThread(BluetoothDevice device) {
-            // Use a temporary object that is later assigned to mmSocket,
-            // because mmSocket is final
-            BluetoothSocket tmp = null;
-            mmDevice = device;
-
-            // Get a BluetoothSocket to connect with the given BluetoothDevice
-            try {
-                // MY_UUID is the app's UUID string, also used by the server code
-                tmp = device.createRfcommSocketToServiceRecord(APP_UUID);
-            } catch (IOException e) {
-            }
-            mmSocket = tmp;
-        }
-
-        @Override
-        public void run() {
-            // Cancel discovery because it will slow down the connection
-            mBluetoothAdapter.cancelDiscovery();
-
-            try {
-                // Connect the device through the socket. This will block
-                // until it succeeds or throws an exception
-                mmSocket.connect();
-            } catch (IOException connectException) {
-                // Unable to connect; close the socket and get out
-                try {
-                    mmSocket.close();
-                } catch (IOException closeException) {
-                }
-                return;
-            }
-
-            // Do work to manage the connection (in a separate thread)
-            //ConnectedThread connectedThread = new ConnectedThread(mmSocket);
-            //connectedThread.start();
-            mHandler.obtainMessage(SUCCESS_CONNECT, mmSocket).sendToTarget();
-        }
-
-        /**
-         * Will cancel an in-progress connection, and close the socket
-         */
-        public void cancel() {
-            try {
-                mmSocket.close();
-            } catch (IOException e) {
-            }
-        }
-
-
+    @Override
+    public boolean onLongClick(View v) {
+        connectedThread.getRecordingThread();
+        return false;
     }
 
-    private class AcceptThread extends Thread {
-        private final BluetoothServerSocket mmServerSocket;
-        private final String NAME = "Server";
-
-        public AcceptThread() {
-            // Use a temporary object that is later assigned to mmServerSocket,
-            // because mmServerSocket is final
-            BluetoothServerSocket tmp = null;
-            try {
-                // MY_UUID is the app's UUID string, also used by the client code
-                tmp = mBluetoothAdapter.listenUsingRfcommWithServiceRecord(NAME, APP_UUID);
-            } catch (IOException e) { }
-            mmServerSocket = tmp;
-        }
-
-        public void run() {
-            BluetoothSocket socket = null;
-            // Keep listening until exception occurs or a socket is returned
-            while (true) {
-                try {
-                    socket = mmServerSocket.accept();
-
-                } catch (IOException e) {
-                    break;
-                }
-                // If a connection was accepted
-                if (socket != null) {
-                    // Do work to manage the connection (in a separate thread)
-                    //ConnectedThread connectedThread = new ConnectedThread(socket);
-                    //connectedThread.start();
-                    connectedThread = new ConnectedThread(socket);
-                    connectedThread.start();
-                    try {
-                        mmServerSocket.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    break;
-                }
-            }
-        }
-    }
-
-    private class ConnectedThread extends Thread {
-
-        private final BluetoothSocket mmSocket;
-        private final InputStream mmInStream;
-        private final OutputStream mmOutStream;
-        private static final int RECORDER_SAMPLERATE = 8000;
-        private static final int RECORDER_CHANNELS = AudioFormat.CHANNEL_IN_MONO;
-        private static final int RECORDER_AUDIO_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
-        private boolean isRecording = false;
-        private int[] mSampleRates = new int[] { 8000, 11025, 22050, 44100 };
-        int bufferSize;
-
-        public ConnectedThread(BluetoothSocket socket) {
-            mmSocket = socket;
-            InputStream tmpIn = null;
-            OutputStream tmpOut = null;
-
-            // Get the input and output streams, using temp objects because
-            // member streams are final
-            try {
-                tmpIn = socket.getInputStream();
-                tmpOut = socket.getOutputStream();
-            } catch (IOException e) { }
-
-            mmInStream = tmpIn;
-            mmOutStream = tmpOut;
-        }
-
-        //convert short to byte
-        private byte[] short2byte(short[] sData) {
-            int shortArrsize = sData.length;
-            byte[] bytes = new byte[shortArrsize * 2];
-            for (int i = 0; i < shortArrsize; i++) {
-                bytes[i * 2] = (byte) (sData[i] & 0x00FF);
-                bytes[(i * 2) + 1] = (byte) (sData[i] >> 8);
-                sData[i] = 0;
-            }
-            return bytes;
-
-        }
-
-        public AudioRecord findAudioRecord() {
-            for (int rate : mSampleRates) {
-                for (short audioFormat : new short[] { AudioFormat.ENCODING_PCM_8BIT, AudioFormat.ENCODING_PCM_16BIT }) {
-                    for (short channelConfig : new short[] { AudioFormat.CHANNEL_IN_MONO, AudioFormat.CHANNEL_IN_STEREO }) {
-                        try {
-
-                            bufferSize = AudioRecord.getMinBufferSize(rate, channelConfig, audioFormat);
-
-                            if (bufferSize != AudioRecord.ERROR_BAD_VALUE) {
-                                // check if we can instantiate and have a success
-                                AudioRecord recorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, rate, channelConfig, audioFormat, bufferSize);
-
-                                if (recorder.getState() == AudioRecord.STATE_INITIALIZED)
-                                    return recorder;
-                            }
-                        } catch (Exception e) {
-
-                        }
-                    }
-                }
-            }
-            return null;
-        }
-
-
-
-        public void run() {
-              // buffer store for the stream
-            int bytes; // bytes returned from read()
-            int BytesPerElement = 2; // 2 bytes in 16bit format
-
-
-            recorder = findAudioRecord();
-            //recorder.release();
-
-            short sData[] = new short[bufferSize];
-            recorder.startRecording();
-            // Keep listening to the InputStream until an exception occurs
-            while (true) {
-                // Read from the InputStream
-                bytes = recorder.read(sData, 0, bufferSize);
-                // Send the obtained bytes to the UI activity
-                mHandler.obtainMessage(SEND_MIC_AUDIO, bytes, -1, bufferSize).sendToTarget();
-                //write(short2byte(sData));
-            }
-        }
-
-        /* Call this from the main activity to send data to the remote device */
-        public void write(byte[] bytes) {
-            try {
-                mmOutStream.write(bytes);
-            } catch (IOException e) { }
-        }
-
-        /* Call this from the main activity to shutdown the connection */
-        public void cancel() {
-            try {
-                mmSocket.close();
-            } catch (IOException e) { }
-        }
-
+    public static Handler getHandler() {
+        return mHandler;
     }
 }
+
