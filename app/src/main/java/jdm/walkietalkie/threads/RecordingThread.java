@@ -48,19 +48,6 @@ public class RecordingThread extends Thread {
         int frequency = 11025;
         int channelConfiguration = AudioFormat.CHANNEL_CONFIGURATION_MONO;
         int audioEncoding = AudioFormat.ENCODING_PCM_16BIT;
-        File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/reverseme.pcm");
-
-// Delete any previous recording.
-        if (file.exists())
-            file.delete();
-
-
-// Create the new file.
-        try {
-            file.createNewFile();
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to create " + file.toString());
-        }
 
         try {
 // Create a DataOuputStream to write the audio data into the saved file.

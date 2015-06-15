@@ -213,7 +213,9 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
 
     @Override
     public boolean onLongClick(View v) {
-        connectedThread.getRecordingThread();
+            connectedThread.getRecordingThread();
+
+
         return false;
     }
 

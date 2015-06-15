@@ -31,9 +31,10 @@ public class ConnectedThread extends Thread{
         int bufferSize;
 
         private final int RECEIVE_AUDIO = 1;
+        private RecordingThread recordingThread;
 
 
-        public ConnectedThread(BluetoothSocket socket) {
+    public ConnectedThread(BluetoothSocket socket) {
             this.mmSocket = socket;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
@@ -56,9 +57,18 @@ public class ConnectedThread extends Thread{
             int BytesPerElement = 2; // 2 bytes in 16bit format
 
             int data = 0;
-             byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[1024];
             int musicLength = 20000;
             short[] music = new short[musicLength];
+            BufferedInputStream bis;
+            DataInputStream dis;
+            AudioTrack audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
+                    11025,
+                    AudioFormat.CHANNEL_CONFIGURATION_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT,
+                    musicLength,
+                    AudioTrack.MODE_STREAM);;
+
 
             // Keep listening to the InputStream until an exception occurs
             while (true) {
@@ -66,38 +76,34 @@ public class ConnectedThread extends Thread{
                 //buffer = new byte[1024];
                 //data = mmInStream.read(buffer);
                 try{
-
-                    BufferedInputStream bis = new BufferedInputStream(mmInStream);
-                    DataInputStream dis = new DataInputStream(bis);
+                    bis = new BufferedInputStream(mmInStream);
+                    dis = new DataInputStream(bis);
                     //dis.read(buffer);
 
-
+                    //audioTrack.flush();
                     int i = 0;
                     while (dis.available() > 0) {
-                        music[musicLength-1-i] = dis.readShort();
+                        //music[musicLength-1-i] = dis.readShort();
+                        if (i == musicLength) {
+                            break;
+                        }
+                        music[i] = dis.readShort();
                         i++;
-
                     }
 
 
 // Close the input streams.
-                    dis.close();
+                    //dis.close();
 
 
 // Create a new AudioTrack object using the same parameters as the AudioRecord
 // object used to create the file.
-                    AudioTrack audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
-                            11025,
-                            AudioFormat.CHANNEL_CONFIGURATION_MONO,
-                            AudioFormat.ENCODING_PCM_16BIT,
-                            musicLength,
-                            AudioTrack.MODE_STREAM);
+
 // Start playback
                     audioTrack.play();
-
+                    audioTrack.flush();
 // Write the music buffer to the AudioTrack object
                     audioTrack.write(music, 0, musicLength);
-
 
 
 
@@ -128,8 +134,10 @@ public class ConnectedThread extends Thread{
             } catch (IOException e) { }
         }
     public void getRecordingThread() {
-        RecordingThread recordingThread = new RecordingThread(this, mmSocket);
-        recordingThread.start();
+        if (recordingThread == null ) {
+            recordingThread = new RecordingThread(this, mmSocket);
+            recordingThread.start();
+        }
     }
 }
 
