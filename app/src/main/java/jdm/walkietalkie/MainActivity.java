@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.media.AudioManager;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Bundle;
@@ -49,6 +50,10 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
     private static Handler mHandler = null;
 
     protected Context activityContext;
+
+    private boolean toggleTalk = false;
+
+    private AudioManager audioManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -208,7 +213,16 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
 
     @Override
     public boolean onLongClick(View v) {
-        connectedThread.startRecordingThread();
+        if (!toggleTalk) {
+            audioManager = (AudioManager)getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
+            audioManager.setMicrophoneMute(false);
+            connectedThread.startRecordingThread();
+            toggleTalk = true;
+        }
+        else {
+            audioManager.setMicrophoneMute(true);
+            toggleTalk = false;
+        }
         return false;
     }
 

@@ -1,7 +1,9 @@
 package jdm.walkietalkie.threads;
 
 import android.bluetooth.BluetoothSocket;
+import android.content.Context;
 import android.media.AudioFormat;
+import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import java.io.BufferedOutputStream;
@@ -12,18 +14,18 @@ public class RecordingThread extends Thread {
 
     private BluetoothSocket mSocket;
     private boolean isRecording = true;
+    private AudioManager audioManager;
 
     public RecordingThread(BluetoothSocket mSocket) {
         this.mSocket = mSocket;
     }
 
-        public void run() {
-            recordAudio();
-        }
-
+    public void run() {
+        recordAudio();
+    }
 
     public void recordAudio() {
-        int frequency = 11025;
+        int frequency = 44100;
         int channelConfiguration = AudioFormat.CHANNEL_CONFIGURATION_MONO;
         int audioEncoding = AudioFormat.ENCODING_PCM_16BIT;
 
@@ -42,11 +44,13 @@ public class RecordingThread extends Thread {
             short[] buffer = new short[bufferSize];
             audioRecord.startRecording();
 
-            while (isRecording) {
-                //TODO: When to stop recording? Toggle button?
-                int bufferReadResult = audioRecord.read(buffer, 0, bufferSize);
-                for (int i = 0; i < bufferReadResult; i++)
-                    dos.writeShort(buffer[i]);
+            //while (isRecording) {
+            while(isRecording) {
+                    //TODO: When to stop recording? Toggle button?
+                    int bufferReadResult = audioRecord.read(buffer, 0, bufferSize);
+                    for (int i = 0; i < bufferReadResult; i++) {
+                        dos.writeShort(buffer[i]);
+                    }
             }
 
             audioRecord.stop();
