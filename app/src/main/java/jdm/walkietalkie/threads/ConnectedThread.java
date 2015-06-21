@@ -3,34 +3,18 @@ package jdm.walkietalkie.threads;
 import android.bluetooth.BluetoothSocket;
 import android.media.AudioFormat;
 import android.media.AudioManager;
-import android.media.AudioRecord;
 import android.media.AudioTrack;
-import android.media.MediaRecorder;
-
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import jdm.walkietalkie.MainActivity;
-
-/**
- * Created by tmast_000 on 6/13/2015.
- */
 public class ConnectedThread extends Thread{
 
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
-        private static final int RECORDER_SAMPLERATE = 8000;
-        private static final int RECORDER_CHANNELS = AudioFormat.CHANNEL_IN_MONO;
-        private static final int RECORDER_AUDIO_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
-        private boolean isRecording = false;
-        private int[] mSampleRates = new int[] { 8000, 11025, 22050, 44100 };
-        int bufferSize;
-
-        private final int RECEIVE_AUDIO = 1;
         private RecordingThread recordingThread;
 
 
@@ -52,71 +36,44 @@ public class ConnectedThread extends Thread{
         }
 
         public void run() {
-            // buffer store for the stream
-            int bytes; // bytes returned from read()
-            int BytesPerElement = 2; // 2 bytes in 16bit format
 
-            int data = 0;
-            byte[] buffer = new byte[1024];
-            int musicLength = 20000;
-            short[] music = new short[musicLength];
+            int audioLength = 20000; //TODO: WHAT SIZE IS IDEAL? Maybe this size is too large causing more delay in audio?
+            short[] audio = new short[audioLength];
             BufferedInputStream bis;
             DataInputStream dis;
-            AudioTrack audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
+            AudioTrack audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, //used to stream the audio
                     11025,
                     AudioFormat.CHANNEL_CONFIGURATION_MONO,
                     AudioFormat.ENCODING_PCM_16BIT,
-                    musicLength,
-                    AudioTrack.MODE_STREAM);;
+                    audioLength,
+                    AudioTrack.MODE_STREAM);
 
 
             // Keep listening to the InputStream until an exception occurs
             while (true) {
-                // Read from the InputStream
-                //buffer = new byte[1024];
-                //data = mmInStream.read(buffer);
                 try{
+                    //TODO: Declare these 2 outside like AudioTrack and flush every iteration?
                     bis = new BufferedInputStream(mmInStream);
                     dis = new DataInputStream(bis);
-                    //dis.read(buffer);
 
-                    //audioTrack.flush();
                     int i = 0;
+                    //fill up the audio
                     while (dis.available() > 0) {
-                        //music[musicLength-1-i] = dis.readShort();
-                        if (i == musicLength) {
+                        if (i == audioLength) {
                             break;
                         }
-                        music[i] = dis.readShort();
+                        audio[i] = dis.readShort();
                         i++;
                     }
 
-
-// Close the input streams.
-                    //dis.close();
-
-
-// Create a new AudioTrack object using the same parameters as the AudioRecord
-// object used to create the file.
-
-// Start playback
-                    audioTrack.play();
+                    //TODO: Send the audio short array to the handler and play audio in Activity?
+                    audioTrack.write(audio, 0, audioLength); //write the audio to the audio track
+                    audioTrack.play(); //play audio on speakers
                     audioTrack.flush();
-// Write the music buffer to the AudioTrack object
-                    audioTrack.write(music, 0, musicLength);
-
-
-
 
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
-
-                // Send the obtained bytes to the UI activity
-                //if(MainActivity.getHandler() != null) {
-                //    MainActivity.getHandler().obtainMessage(RECEIVE_AUDIO, data, -1, buffer).sendToTarget();
-                //}
             }
         }
 
@@ -133,12 +90,13 @@ public class ConnectedThread extends Thread{
                 mmSocket.close();
             } catch (IOException e) { }
         }
-    public void getRecordingThread() {
-        if (recordingThread == null ) {
-            recordingThread = new RecordingThread(this, mmSocket);
-            recordingThread.start();
+
+        public void startRecordingThread() {
+            if (recordingThread == null ) {
+                recordingThread = new RecordingThread(mmSocket);
+                recordingThread.start();
+            }
         }
-    }
 }
 
 

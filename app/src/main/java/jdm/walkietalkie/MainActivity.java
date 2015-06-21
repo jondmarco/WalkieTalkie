@@ -7,8 +7,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.media.AudioRecord;
-import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Bundle;
@@ -23,34 +21,34 @@ import android.widget.ListView;
 import android.widget.Toast;
 import java.util.Set;
 import java.util.UUID;
+import jdm.walkietalkie.Util.HandlerCases;
 import jdm.walkietalkie.threads.ConnectPhoneThread;
 import jdm.walkietalkie.threads.ConnectedThread;
 import jdm.walkietalkie.threads.AcceptThread;
 import jdm.walkietalkie.threads.RecordingThread;
 
+//TODO: Handle program crashes -> catch Exception at some point in MainActivity?
+
 public class MainActivity extends ActionBarActivity implements ListView.OnClickListener, ListView.OnItemClickListener, View.OnLongClickListener {
 
     private ListView lvPaired, lvDiscovered;
     private Button bScan, bTalk;
-    private ArrayAdapter<String> pAdapter, dAdapter;
+    private ArrayAdapter<String> pAdapter; //paired devices adapter
+    private ArrayAdapter<String> dAdapter; //discovered devices adapter
     private BluetoothAdapter mBluetoothAdapter;
 
     private ConnectPhoneThread connectPhoneThread;
     private AcceptThread acceptThread;
     private ConnectedThread connectedThread;
+    private RecordingThread recordingThread;
 
-    private final int SUCCESS_CONNECT = 0;
-    private final int RECEIVE_AUDIO = 1;
-    private final UUID APP_UUID = UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66");
-
-    private  RecordingThread recordingThread;
-
-    int track;
+    private static final int SUCCESS_CONNECT = HandlerCases.SUCCESS_CONNECT;
+    private static final int RECEIVE_AUDIO = HandlerCases.RECEIVE_AUDIO;
+    private static final UUID APP_UUID = UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66");
 
     private static Handler mHandler = null;
 
     protected Context activityContext;
-    private ConnectedThread connectingThread = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,13 +62,17 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
     }
 
     private void enableBluetooth() {
+
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (mBluetoothAdapter == null) {
-            Toast.makeText(this, "Does not support Bluetooth",Toast.LENGTH_LONG).show();
+            //TODO: Halt execution of the program after this?
+            Toast.makeText(this, "This device does not support Bluetooth",Toast.LENGTH_LONG).show();
+            System.exit(0);
         }
+
+        //Start thread to listen for incoming connection requests
         acceptThread = new AcceptThread(mBluetoothAdapter, APP_UUID);
         acceptThread.start();
-        track = 0;
 
         Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
         discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
@@ -85,16 +87,13 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
                 super.handleMessage(msg);
                 switch (msg.what) {
                     case SUCCESS_CONNECT:
+                        //TODO: Switch to ConnectedActivity
                         connectedThread = new ConnectedThread((BluetoothSocket) msg.obj);
                         connectedThread.start();
                         break;
                     case RECEIVE_AUDIO:
-                        // and play on speaker
-                        byte[] readbuf = (byte[]) msg.obj;
-                        String s = new String(readbuf);
-                        if (s.length() > 0) {
-                            Toast.makeText(activityContext, s, Toast.LENGTH_LONG).show();
-                        }
+                        //TODO: Handle the playing of audio here or in connected thread?
+
                         break;
                 }
             }
@@ -112,8 +111,6 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
         bTalk.setOnLongClickListener(this);
     }
 
-
-
     protected void showPairedDevices() {
         pAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, getPairedDevices());
         lvPaired.setAdapter(pAdapter);
@@ -125,8 +122,6 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
         lvDiscovered.setAdapter(dAdapter);
     }
 
-
-
     protected String[] getPairedDevices() {
         Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
         String[] returnString = new String[10];
@@ -135,7 +130,7 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
             // Loop through paired devices
             int index = 0;
             for (BluetoothDevice device : pairedDevices) {
-                // Add the name and address to an array adapter to show in a ListView
+                // Add the name and address to an array of Strings
                 returnString[index] = device.getName() + ": " + device.getAddress();
                 index++;
             }
@@ -144,6 +139,7 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
     }
 
     protected void discoverDevices() {
+
         // Create a BroadcastReceiver for ACTION_FOUND
         final BroadcastReceiver mReceiver = new BroadcastReceiver() {
             public void onReceive(Context context, Intent intent) {
@@ -157,9 +153,11 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
                 }
             }
         };
-// Register the BroadcastReceiver
+
+        //Register the BroadcastReceiver
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        registerReceiver(mReceiver, filter); // Don't forget to unregister during onDestroy
+        //TODO: Don't forget to unregister during onDestroy
+        registerReceiver(mReceiver, filter);
 
         return;
     }
@@ -174,11 +172,8 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
 
+        int id = item.getItemId();
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
@@ -213,9 +208,7 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
 
     @Override
     public boolean onLongClick(View v) {
-            connectedThread.getRecordingThread();
-
-
+        connectedThread.startRecordingThread();
         return false;
     }
 

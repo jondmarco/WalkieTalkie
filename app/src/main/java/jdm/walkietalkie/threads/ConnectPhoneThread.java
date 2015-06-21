@@ -7,17 +7,15 @@ import android.bluetooth.BluetoothSocket;
 import java.io.IOException;
 import java.util.UUID;
 import jdm.walkietalkie.MainActivity;
+import jdm.walkietalkie.Util.HandlerCases;
 
-/**
- * Created by tmast_000 on 6/13/2015.
- */
 public class ConnectPhoneThread extends Thread {
-    private BluetoothAdapter mBluetoothAdapter;
+
     private final BluetoothSocket mmSocket;
     private final BluetoothDevice mmDevice;
+    private final int SUCCESS_CONNECT = HandlerCases.SUCCESS_CONNECT;
     private UUID APP_UUID;
-
-    private final int SUCCESS_CONNECT = 0;
+    private BluetoothAdapter mBluetoothAdapter;
 
     public ConnectPhoneThread(BluetoothDevice device,BluetoothAdapter adapter,UUID uuid) {
             // Use a temporary object that is later assigned to mmSocket,
@@ -52,15 +50,13 @@ public class ConnectPhoneThread extends Thread {
                 }
                 return;
             }
-
-            // Do work to manage the connection (in a separate thread)
+            //Notify the MainActivity handler that the connection was successful
             MainActivity.getHandler().obtainMessage(SUCCESS_CONNECT, mmSocket).sendToTarget();
         }
 
     /**
      * Will cancel an in-progress connection, and close the socket
      */
-
     public void cancel() {
         try {
             mmSocket.close();

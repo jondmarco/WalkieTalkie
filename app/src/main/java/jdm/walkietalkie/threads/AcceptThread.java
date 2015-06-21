@@ -6,20 +6,18 @@ import android.bluetooth.BluetoothSocket;
 import java.io.IOException;
 import java.util.UUID;
 import jdm.walkietalkie.MainActivity;
+import jdm.walkietalkie.Util.HandlerCases;
 
-/**
- * Created by tmast_000 on 6/13/2015.
- */
 public class AcceptThread extends Thread {
     private final UUID APP_UUID;
     private final BluetoothServerSocket mmServerSocket;
     private final String NAME = "Server";
     private final BluetoothAdapter mBluetoothAdapter;
-    private final int SUCCESS_CONNECT = 0;
+    private final int SUCCESS_CONNECT = HandlerCases.SUCCESS_CONNECT;
 
     public AcceptThread(BluetoothAdapter adapter,UUID uuid) {
-            // Use a temporary object that is later assigned to mmServerSocket,
-            // because mmServerSocket is final
+        // Use a temporary object that is later assigned to mmServerSocket,
+        // because mmServerSocket is final
         BluetoothServerSocket tmp = null;
         this.mBluetoothAdapter = adapter;
         this.APP_UUID = uuid;
@@ -41,7 +39,7 @@ public class AcceptThread extends Thread {
                 }
                 // If a connection was accepted
                 if (socket != null) {
-                    // Do work to manage the connection (in a separate thread)
+                    //Notify the MainActivity handler that the connection was successful
                     MainActivity.getHandler().obtainMessage(SUCCESS_CONNECT, socket).sendToTarget();
                     try {
                         mmServerSocket.close();
