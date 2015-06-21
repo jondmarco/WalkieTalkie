@@ -39,8 +39,8 @@ public class ConnectedThread extends Thread{
 
             int audioLength = 20000; //TODO: WHAT SIZE IS IDEAL? Maybe this size is too large causing more delay in audio?
             short[] audio = new short[audioLength];
-            BufferedInputStream bis;
-            DataInputStream dis;
+            BufferedInputStream bis = new BufferedInputStream(mmInStream);;
+            DataInputStream dis = new DataInputStream(bis);
             AudioTrack audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, //used to stream the audio
                     11025,
                     AudioFormat.CHANNEL_CONFIGURATION_MONO,
@@ -49,12 +49,15 @@ public class ConnectedThread extends Thread{
                     AudioTrack.MODE_STREAM);
 
 
+
+
+
             // Keep listening to the InputStream until an exception occurs
             while (true) {
                 try{
                     //TODO: Declare these 2 outside like AudioTrack and flush every iteration?
-                    bis = new BufferedInputStream(mmInStream);
-                    dis = new DataInputStream(bis);
+                    //bis = new BufferedInputStream(mmInStream);
+                    //dis = new DataInputStream(bis);
 
                     int i = 0;
                     //fill up the audio
@@ -70,6 +73,8 @@ public class ConnectedThread extends Thread{
                     audioTrack.write(audio, 0, audioLength); //write the audio to the audio track
                     audioTrack.play(); //play audio on speakers
                     audioTrack.flush();
+
+                    
 
                 } catch (IOException e) {
                     e.printStackTrace();
