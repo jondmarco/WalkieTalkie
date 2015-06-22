@@ -51,7 +51,7 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
 
     protected Context activityContext;
 
-    private boolean toggleTalk = false;
+    public static boolean toggleTalk = false;
 
     private AudioManager audioManager;
 
@@ -214,13 +214,13 @@ public class MainActivity extends ActionBarActivity implements ListView.OnClickL
     @Override
     public boolean onLongClick(View v) {
         if (!toggleTalk) {
-            audioManager = (AudioManager)getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
-            audioManager.setMicrophoneMute(false);
-            connectedThread.startRecordingThread();
+            //audioManager = (AudioManager)getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
+            //audioManager.setMicrophoneMute(false);
             toggleTalk = true;
+            connectedThread.startRecordingThread();
         }
         else {
-            audioManager.setMicrophoneMute(true);
+            //audioManager.setMicrophoneMute(true);
             toggleTalk = false;
         }
         return false;

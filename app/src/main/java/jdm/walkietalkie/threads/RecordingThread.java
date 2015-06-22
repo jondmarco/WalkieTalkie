@@ -10,11 +10,12 @@ import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.OutputStream;
 
+import jdm.walkietalkie.MainActivity;
+
 public class RecordingThread extends Thread {
 
     private BluetoothSocket mSocket;
     private boolean isRecording = true;
-    private AudioManager audioManager;
 
     public RecordingThread(BluetoothSocket mSocket) {
         this.mSocket = mSocket;
@@ -44,13 +45,16 @@ public class RecordingThread extends Thread {
             short[] buffer = new short[bufferSize];
             audioRecord.startRecording();
 
-            //while (isRecording) {
+
+
             while(isRecording) {
-                    //TODO: When to stop recording? Toggle button?
+                //TODO: When to stop recording? Toggle button?
+                if(MainActivity.toggleTalk) {
                     int bufferReadResult = audioRecord.read(buffer, 0, bufferSize);
                     for (int i = 0; i < bufferReadResult; i++) {
                         dos.writeShort(buffer[i]);
                     }
+                }
             }
 
             audioRecord.stop();

@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import jdm.walkietalkie.MainActivity;
+
 public class ConnectedThread extends Thread{
 
         private final BluetoothSocket mmSocket;
@@ -86,7 +88,10 @@ public class ConnectedThread extends Thread{
         public void write(byte[] bytes) {
             try {
                 mmOutStream.write(bytes);
-            } catch (IOException e) { }
+            }
+            catch (IOException e) {
+
+            }
         }
 
         /* Call this from the main activity to shutdown the connection */
